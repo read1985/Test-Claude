@@ -945,7 +945,10 @@
                 return;
             }
             
-            document.querySelector('.dashboard-container').style.display = 'flex';
+            const dashboardContainer = document.querySelector('.dashboard-container');
+            if (dashboardContainer) {
+                dashboardContainer.style.display = 'flex';
+            }
         }
 
         // Authentication functions
@@ -1133,6 +1136,16 @@
 
         // Update statistics
         function updateStats() {
+            // Check if stats elements exist before updating
+            const totalBalanceEl = document.getElementById('totalBalance');
+            const monthlyExpensesEl = document.getElementById('monthlyExpenses');
+            const monthlyIncomeEl = document.getElementById('monthlyIncome');
+            const needsReviewEl = document.getElementById('needsReview');
+            
+            if (!totalBalanceEl || !monthlyExpensesEl || !monthlyIncomeEl || !needsReviewEl) {
+                return; // Elements don't exist, skip update
+            }
+            
             const totalBalance = transactions.reduce((sum, t) => sum + (t.amount_cents / 100), 0);
             const currentMonth = new Date().getMonth();
             const currentYear = new Date().getFullYear();
@@ -1152,10 +1165,10 @@
             
             const needsReview = transactions.filter(t => t.needs_review).length;
 
-            document.getElementById('totalBalance').textContent = formatCurrency(totalBalance);
-            document.getElementById('monthlyExpenses').textContent = formatCurrency(monthlyExpenses);
-            document.getElementById('monthlyIncome').textContent = formatCurrency(monthlyIncome);
-            document.getElementById('needsReview').textContent = needsReview;
+            totalBalanceEl.textContent = formatCurrency(totalBalance);
+            monthlyExpensesEl.textContent = formatCurrency(monthlyExpenses);
+            monthlyIncomeEl.textContent = formatCurrency(monthlyIncome);
+            needsReviewEl.textContent = needsReview;
         }
 
         // Update recent transactions
@@ -1253,14 +1266,24 @@
 
         // Initialize charts
         function initializeCharts() {
-            initSpendingChart();
-            initCategoryChart();
-            initTrendsChart();
+            // Only initialize charts if the elements exist (dashboard is loaded)
+            if (document.getElementById('spendingChart')) {
+                initSpendingChart();
+            }
+            if (document.getElementById('categoryChart')) {
+                initCategoryChart();
+            }
+            if (document.getElementById('trendsChart')) {
+                initTrendsChart();
+            }
         }
 
         // Initialize spending chart
         function initSpendingChart() {
-            const ctx = document.getElementById('spendingChart').getContext('2d');
+            const chartElement = document.getElementById('spendingChart');
+            if (!chartElement) return;
+            
+            const ctx = chartElement.getContext('2d');
             
             // Get last 30 days of data
             const last30Days = [];
@@ -1314,7 +1337,10 @@
 
         // Initialize category chart
         function initCategoryChart() {
-            const ctx = document.getElementById('categoryChart').getContext('2d');
+            const chartElement = document.getElementById('categoryChart');
+            if (!chartElement) return;
+            
+            const ctx = chartElement.getContext('2d');
             
             const categorySpending = {};
             transactions.filter(t => t.amount_cents < 0 && t.category).forEach(t => {
@@ -1351,7 +1377,10 @@
 
         // Initialize trends chart
         function initTrendsChart() {
-            const ctx = document.getElementById('trendsChart').getContext('2d');
+            const chartElement = document.getElementById('trendsChart');
+            if (!chartElement) return;
+            
+            const ctx = chartElement.getContext('2d');
             
             // Get last 6 months
             const months = [];
