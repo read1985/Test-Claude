@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #f1f5f9;
+            --accent-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8fafc;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 2rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .nav-menu {
+            padding: 1.5rem 0;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1.5rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: var(--secondary-color);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--secondary-color);
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .grid-cols-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .grid-cols-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .col-span-2 {
+            grid-column: span 2;
+        }
+
+        .col-span-3 {
+            grid-column: span 3;
+        }
+
+        /* Stats Cards */
+        .stat-card {
+            background: var(--gradient-bg);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+
+        .stat-content {
+            padding: 2rem 1.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        /* Transaction List */
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s ease;
+        }
+
+        .transaction-item:hover {
+            background: var(--secondary-color);
+        }
+
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .transaction-details {
+            flex: 1;
+        }
+
+        .transaction-description {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .transaction-category {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .transaction-amount {
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .amount-positive {
+            color: var(--accent-color);
+        }
+
+        .amount-negative {
+            color: var(--danger-color);
+        }
+
+        /* Category Badge */
+        .category-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: var(--shadow-lg);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            background: white;
+        }
+
+        /* Loading States */
+        .loading {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .spinner {
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .grid-cols-4,
+            .grid-cols-3,
+            .grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .col-span-2,
+            .col-span-3 {
+                grid-column: span 1;
+            }
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    Finance Dashboard
+                </div>
+            </div>
+            <nav class="nav-menu">
+                <div class="nav-item active" data-tab="overview">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Overview
+                </div>
+                <div class="nav-item" data-tab="transactions">
+                    <i class="fas fa-list"></i>
+                    Transactions
+                </div>
+                <div class="nav-item" data-tab="categories">
+                    <i class="fas fa-tags"></i>
+                    Categories
+                </div>
+                <div class="nav-item" data-tab="rules">
+                    <i class="fas fa-cogs"></i>
+                    Rules
+                </div>
+                <div class="nav-item" data-tab="insights">
+                    <i class="fas fa-chart-pie"></i>
+                    Insights
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-content active">
+                <div class="page-header">
+                    <h1 class="page-title">Financial Overview</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                        <button class="btn btn-secondary" onclick="signOut()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Sign Out
+                        </button>
+                        <button class="btn btn-primary" onclick="openAddTransactionModal()">
+                            <i class="fas fa-plus"></i>
+                            Add Transaction
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-4">
+                    <div class="card stat-card">
+                        <div class="stat-content">
+                            <div class="stat-icon">
+                                <i class="fas fa-wallet"></i>
+                            </div>
+                            <div class="stat-value" id="totalBalance">$0.00</div>
+                            <div class="stat-label">Total Balance</div>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-content">
+                            <div class="stat-icon">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            <div class="stat-value" id="monthlyExpenses">$0.00</div>
+                            <div class="stat-label">Monthly Expenses</div>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-content">
+                            <div class="stat-icon">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                            <div class="stat-value" id="monthlyIncome">$0.00</div>
+                            <div class="stat-label">Monthly Income</div>
+                        </div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-content">
+                            <div class="stat-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="stat-value" id="needsReview">0</div>
+                            <div class="stat-label">Needs Review</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts and Recent Transactions -->
+                <div class="grid grid-cols-3" style="margin-top: 2rem;">
+                    <div class="card col-span-2">
+                        <div class="card-header">
+                            <h2 class="card-title">Spending Overview</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-container">
+                                <canvas id="spendingChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Recent Transactions</h2>
+                        </div>
+                        <div class="card-content" style="padding: 0;">
+                            <div id="recentTransactions">
+                                <!-- Transactions will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions Tab -->
+            <div id="transactions" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title">Transactions</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="exportTransactions()">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                        <button class="btn btn-primary" onclick="applyCategorization()">
+                            <i class="fas fa-magic"></i>
+                            Auto Categorize
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">All Transactions</h2>
+                        <div>
+                            <input type="text" class="form-input" placeholder="Search transactions..." id="searchTransactions" style="width: 300px;">
+                        </div>
+                    </div>
+                    <div class="card-content" style="padding: 0;">
+                        <div id="transactionsList">
+                            <!-- Transactions will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Tab -->
+            <div id="categories" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title">Categories</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="openAddCategoryModal()">
+                            <i class="fas fa-plus"></i>
+                            Add Category
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3">
+                    <div class="card col-span-2">
+                        <div class="card-header">
+                            <h2 class="card-title">Category Breakdown</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-container">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Manage Categories</h2>
+                        </div>
+                        <div class="card-content">
+                            <div id="categoriesList">
+                                <!-- Categories will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rules Tab -->
+            <div id="rules" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title">Automation Rules</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" onclick="openAddRuleModal()">
+                            <i class="fas fa-plus"></i>
+                            Add Rule
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Active Rules</h2>
+                    </div>
+                    <div class="card-content">
+                        <div id="rulesList">
+                            <!-- Rules will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insights Tab -->
+            <div id="insights" class="tab-content">
+                <div class="page-header">
+                    <h1 class="page-title">Financial Insights</h1>
+                </div>
+
+                <div class="grid grid-cols-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Monthly Trends</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-container">
+                                <canvas id="trendsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Top Spending Categories</h2>
+                        </div>
+                        <div class="card-content">
+                            <div id="topCategories">
+                                <!-- Top categories will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="addTransactionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Transaction</h3>
+                <button onclick="closeModal('addTransactionModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addTransactionForm">
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-input" name="description" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Amount</label>
+                        <input type="number" class="form-input" name="amount" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" name="category" id="transactionCategorySelect">
+                            <!-- Categories will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Add Transaction</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="addCategoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Category</h3>
+                <button onclick="closeModal('addCategoryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addCategoryForm">
+                    <div class="form-group">
+                        <label class="form-label">Category Name</label>
+                        <input type="text" class="form-input" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Color</label>
+                        <select class="form-select" name="color">
+                            <option value="bg-blue-500">Blue</option>
+                            <option value="bg-green-500">Green</option>
+                            <option value="bg-red-500">Red</option>
+                            <option value="bg-yellow-500">Yellow</option>
+                            <option value="bg-purple-500">Purple</option>
+                            <option value="bg-pink-500">Pink</option>
+                            <option value="bg-indigo-500">Indigo</option>
+                            <option value="bg-gray-500">Gray</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Add Category</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="addRuleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Automation Rule</h3>
+                <button onclick="closeModal('addRuleModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addRuleForm">
+                    <div class="form-group">
+                        <label class="form-label">Description Contains</label>
+                        <input type="text" class="form-input" name="matcher" placeholder="e.g., Supermarket" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" name="category" id="ruleCategorySelect">
+                            <!-- Categories will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confidence (0-100)</label>
+                        <input type="number" class="form-input" name="confidence" min="0" max="100" value="80" required>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Add Rule</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Supabase client with environment variables
+        const SUPABASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'https://zwmcuanpkeugmobxjero.supabase.co'
+            : (process?.env?.VITE_SUPABASE_URL || 'https://zwmcuanpkeugmobxjero.supabase.co');
+        const SUPABASE_ANON_KEY = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3bWN1YW5wa2V1Z21vYnhqZXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxMzE4NzgsImV4cCI6MjA2NzcwNzg3OH0.UfyLKz0ITRMG9IpzllwNRhaIDKg-zI93EAYsF7HIy2s'
+            : (process?.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3bWN1YW5wa2V1Z21vYnhqZXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxMzE4NzgsImV4cCI6MjA2NzcwNzg3OH0.UfyLKz0ITRMG9IpzllwNRhaIDKg-zI93EAYsF7HIy2s');
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Global state
+        let currentUser = null;
+        let transactions = [];
+        let categories = [];
+        let rules = [];
+        let charts = {};
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', async function() {
+            await checkAuthState();
+            setupEventListeners();
+            
+            // Only load data if user is authenticated
+            if (currentUser) {
+                await loadData();
+                initializeCharts();
+                showDashboard();
+            } else {
+                showAuthScreen();
+            }
+        });
+
+        // Check authentication state
+        async function checkAuthState() {
+            const { data: { user } } = await supabase.auth.getUser();
+            currentUser = user;
+            
+            // Listen for auth changes
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                currentUser = session?.user || null;
+                if (currentUser) {
+                    await loadData();
+                    initializeCharts();
+                    showDashboard();
+                } else {
+                    showAuthScreen();
+                }
+            });
+        }
+
+        // Show authentication screen
+        function showAuthScreen() {
+            document.querySelector('.dashboard-container').innerHTML = `
+                <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: var(--gradient-bg);">
+                    <div class="card" style="max-width: 400px; width: 90%; margin: 2rem;">
+                        <div class="card-header">
+                            <h2 class="card-title" style="text-align: center; color: var(--primary-color);">
+                                <i class="fas fa-chart-line"></i>
+                                Finance Dashboard
+                            </h2>
+                        </div>
+                        <div class="card-content">
+                            <div style="text-align: center; margin-bottom: 2rem;">
+                                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                                    Please sign in to access your personal finance dashboard
+                                </p>
+                            </div>
+                            
+                            <div id="authTabs" style="display: flex; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color);">
+                                <button class="auth-tab active" data-tab="signin" style="flex: 1; padding: 0.75rem; border: none; background: none; cursor: pointer; border-bottom: 2px solid var(--primary-color); color: var(--primary-color); font-weight: 500;">
+                                    Sign In
+                                </button>
+                                <button class="auth-tab" data-tab="signup" style="flex: 1; padding: 0.75rem; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; color: var(--text-secondary);">
+                                    Sign Up
+                                </button>
+                            </div>
+
+                            <div id="signinForm" class="auth-form">
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-input" id="signinEmail" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-input" id="signinPassword" required>
+                                </div>
+                                <button class="btn btn-primary" style="width: 100%;" onclick="signIn()">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                    Sign In
+                                </button>
+                            </div>
+
+                            <div id="signupForm" class="auth-form" style="display: none;">
+                                <div class="form-group">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-input" id="signupEmail" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Password</label>
+                                    <input type="password" class="form-input" id="signupPassword" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Confirm Password</label>
+                                    <input type="password" class="form-input" id="signupPasswordConfirm" required>
+                                </div>
+                                <button class="btn btn-primary" style="width: 100%;" onclick="signUp()">
+                                    <i class="fas fa-user-plus"></i>
+                                    Sign Up
+                                </button>
+                            </div>
+
+                            <div style="text-align: center; margin-top: 1.5rem;">
+                                <button class="btn btn-secondary" onclick="signInDemo()" style="width: 100%;">
+                                    <i class="fas fa-eye"></i>
+                                    Demo with Test Account
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Setup auth tab switching
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabType = this.dataset.tab;
+                    
+                    // Update tab appearance
+                    document.querySelectorAll('.auth-tab').forEach(t => {
+                        t.classList.remove('active');
+                        t.style.borderBottom = '2px solid transparent';
+                        t.style.color = 'var(--text-secondary)';
+                    });
+                    
+                    this.classList.add('active');
+                    this.style.borderBottom = '2px solid var(--primary-color)';
+                    this.style.color = 'var(--primary-color)';
+                    
+                    // Show/hide forms
+                    document.getElementById('signinForm').style.display = tabType === 'signin' ? 'block' : 'none';
+                    document.getElementById('signupForm').style.display = tabType === 'signup' ? 'block' : 'none';
+                });
+            });
+        }
+
+        // Show main dashboard
+        function showDashboard() {
+            // Restore the original dashboard HTML if it was replaced
+            if (!document.querySelector('.sidebar')) {
+                location.reload(); // Simple way to restore the dashboard
+                return;
+            }
+            
+            document.querySelector('.dashboard-container').style.display = 'flex';
+        }
+
+        // Authentication functions
+        async function signIn() {
+            const email = document.getElementById('signinEmail').value;
+            const password = document.getElementById('signinPassword').value;
+            
+            if (!email || !password) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) throw error;
+                showNotification('Signed in successfully!', 'success');
+            } catch (error) {
+                console.error('Sign in error:', error);
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function signUp() {
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('signupPasswordConfirm').value;
+            
+            if (!email || !password || !confirmPassword) {
+                showNotification('Please fill in all fields', 'error');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showNotification('Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase.auth.signUp({
+                    email,
+                    password
+                });
+                
+                if (error) throw error;
+                showNotification('Account created! Please check your email to verify your account.', 'success');
+            } catch (error) {
+                console.error('Sign up error:', error);
+                showNotification(error.message, 'error');
+            }
+        }
+
+        async function signInDemo() {
+            // For demo purposes, let's try to sign in with a demo account
+            // You'll need to create this account in your Supabase auth
+            try {
+                const { error } = await supabase.auth.signInWithPassword({
+                    email: 'demo@example.com',
+                    password: 'demo123'
+                });
+                
+                if (error) {
+                    // If demo account doesn't exist, show instructions
+                    showNotification('Demo account not set up. Please create an account or contact the administrator.', 'error');
+                } else {
+                    showNotification('Signed in with demo account!', 'success');
+                }
+            } catch (error) {
+                console.error('Demo sign in error:', error);
+                showNotification('Demo account not available. Please create your own account.', 'error');
+            }
+        }
+
+        async function signOut() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                showNotification('Signed out successfully', 'success');
+            } catch (error) {
+                console.error('Sign out error:', error);
+                showNotification('Error signing out', 'error');
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Tab navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    switchTab(tabId);
+                });
+            });
+
+            // Form submissions
+            document.getElementById('addTransactionForm').addEventListener('submit', handleAddTransaction);
+            document.getElementById('addCategoryForm').addEventListener('submit', handleAddCategory);
+            document.getElementById('addRuleForm').addEventListener('submit', handleAddRule);
+
+            // Search functionality
+            document.getElementById('searchTransactions').addEventListener('input', filterTransactions);
+        }
+
+        // Tab switching
+        function switchTab(tabId) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Load all data
+        async function loadData() {
+            try {
+                await Promise.all([
+                    loadTransactions(),
+                    loadCategories(),
+                    loadRules()
+                ]);
+                updateDashboard();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showNotification('Error loading data', 'error');
+            }
+        }
+
+        // Load transactions
+        async function loadTransactions() {
+            const { data, error } = await supabase
+                .from('transactions')
+                .select('*')
+                .order('posted_at', { ascending: false });
+            
+            if (error) throw error;
+            transactions = data || [];
+        }
+
+        // Load categories
+        async function loadCategories() {
+            const { data, error } = await supabase
+                .from('categories')
+                .select('*')
+                .order('name');
+            
+            if (error) throw error;
+            categories = data || [];
+            updateCategorySelects();
+        }
+
+        // Load rules
+        async function loadRules() {
+            const { data, error } = await supabase
+                .from('rules')
+                .select('*')
+                .order('confidence', { ascending: false });
+            
+            if (error) throw error;
+            rules = data || [];
+        }
+
+        // Update dashboard with current data
+        function updateDashboard() {
+            updateStats();
+            updateRecentTransactions();
+            updateTransactionsList();
+            updateCategoriesList();
+            updateRulesList();
+            updateCharts();
+        }
+
+        // Update statistics
+        function updateStats() {
+            const totalBalance = transactions.reduce((sum, t) => sum + (t.amount_cents / 100), 0);
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            const monthlyTransactions = transactions.filter(t => {
+                const date = new Date(t.posted_at);
+                return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+            });
+            
+            const monthlyExpenses = monthlyTransactions
+                .filter(t => t.amount_cents < 0)
+                .reduce((sum, t) => sum + Math.abs(t.amount_cents / 100), 0);
+            
+            const monthlyIncome = monthlyTransactions
+                .filter(t => t.amount_cents > 0)
+                .reduce((sum, t) => sum + (t.amount_cents / 100), 0);
+            
+            const needsReview = transactions.filter(t => t.needs_review).length;
+
+            document.getElementById('totalBalance').textContent = formatCurrency(totalBalance);
+            document.getElementById('monthlyExpenses').textContent = formatCurrency(monthlyExpenses);
+            document.getElementById('monthlyIncome').textContent = formatCurrency(monthlyIncome);
+            document.getElementById('needsReview').textContent = needsReview;
+        }
+
+        // Update recent transactions
+        function updateRecentTransactions() {
+            const recentTransactions = transactions.slice(0, 5);
+            const container = document.getElementById('recentTransactions');
+            
+            container.innerHTML = recentTransactions.map(transaction => `
+                <div class="transaction-item">
+                    <div class="transaction-icon">
+                        <i class="fas ${getTransactionIcon(transaction.category)}"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="transaction-description">${transaction.description}</div>
+                        <div class="transaction-category">
+                            ${transaction.category || 'Uncategorized'}
+                        </div>
+                    </div>
+                    <div class="transaction-amount ${transaction.amount_cents > 0 ? 'amount-positive' : 'amount-negative'}">
+                        ${formatCurrency(transaction.amount_cents / 100)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update transactions list
+        function updateTransactionsList() {
+            const container = document.getElementById('transactionsList');
+            
+            container.innerHTML = transactions.map(transaction => `
+                <div class="transaction-item">
+                    <div class="transaction-icon">
+                        <i class="fas ${getTransactionIcon(transaction.category)}"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="transaction-description">${transaction.description}</div>
+                        <div class="transaction-category">
+                            ${transaction.category || 'Uncategorized'}
+                            ${transaction.needs_review ? '<span class="category-badge" style="background: var(--warning-color); color: white;">Needs Review</span>' : ''}
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                            ${new Date(transaction.posted_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                    <div class="transaction-amount ${transaction.amount_cents > 0 ? 'amount-positive' : 'amount-negative'}">
+                        ${formatCurrency(transaction.amount_cents / 100)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update categories list
+        function updateCategoriesList() {
+            const container = document.getElementById('categoriesList');
+            
+            container.innerHTML = categories.map(category => `
+                <div class="transaction-item">
+                    <div class="transaction-icon" style="background: var(--primary-color); color: white;">
+                        <i class="fas fa-tag"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="transaction-description">${category.name}</div>
+                        <div class="transaction-category">
+                            ${getTransactionCountForCategory(category.name)} transactions
+                        </div>
+                    </div>
+                    <div style="width: 20px; height: 20px; border-radius: 4px; background: ${getCategoryColor(category.color)};"></div>
+                </div>
+            `).join('');
+        }
+
+        // Update rules list
+        function updateRulesList() {
+            const container = document.getElementById('rulesList');
+            
+            container.innerHTML = rules.map(rule => `
+                <div class="transaction-item">
+                    <div class="transaction-icon">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="transaction-description">Contains: "${rule.matcher}"</div>
+                        <div class="transaction-category">
+                            → ${rule.category} (${rule.confidence}% confidence)
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="deleteRule('${rule.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            initSpendingChart();
+            initCategoryChart();
+            initTrendsChart();
+        }
+
+        // Initialize spending chart
+        function initSpendingChart() {
+            const ctx = document.getElementById('spendingChart').getContext('2d');
+            
+            // Get last 30 days of data
+            const last30Days = [];
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                last30Days.push(date.toISOString().split('T')[0]);
+            }
+            
+            const dailySpending = last30Days.map(date => {
+                const dayTransactions = transactions.filter(t => 
+                    t.posted_at.startsWith(date) && t.amount_cents < 0
+                );
+                return dayTransactions.reduce((sum, t) => sum + Math.abs(t.amount_cents / 100), 0);
+            });
+
+            charts.spending = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last30Days.map(date => new Date(date).toLocaleDateString()),
+                    datasets: [{
+                        label: 'Daily Spending',
+                        data: dailySpending,
+                        borderColor: 'rgb(37, 99, 235)',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize category chart
+        function initCategoryChart() {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            const categorySpending = {};
+            transactions.filter(t => t.amount_cents < 0 && t.category).forEach(t => {
+                categorySpending[t.category] = (categorySpending[t.category] || 0) + Math.abs(t.amount_cents / 100);
+            });
+
+            const sortedCategories = Object.entries(categorySpending)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 10);
+
+            charts.category = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: sortedCategories.map(([category]) => category),
+                    datasets: [{
+                        data: sortedCategories.map(([,amount]) => amount),
+                        backgroundColor: [
+                            '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+                            '#ec4899', '#6366f1', '#84cc16', '#06b6d4', '#f97316'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize trends chart
+        function initTrendsChart() {
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+            
+            // Get last 6 months
+            const months = [];
+            const monthlyData = { income: [], expenses: [] };
+            
+            for (let i = 5; i >= 0; i--) {
+                const date = new Date();
+                date.setMonth(date.getMonth() - i);
+                const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                months.push(date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
+                
+                const monthTransactions = transactions.filter(t => t.posted_at.startsWith(monthKey));
+                const income = monthTransactions.filter(t => t.amount_cents > 0).reduce((sum, t) => sum + (t.amount_cents / 100), 0);
+                const expenses = monthTransactions.filter(t => t.amount_cents < 0).reduce((sum, t) => sum + Math.abs(t.amount_cents / 100), 0);
+                
+                monthlyData.income.push(income);
+                monthlyData.expenses.push(expenses);
+            }
+
+            charts.trends = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Income',
+                        data: monthlyData.income,
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)'
+                    }, {
+                        label: 'Expenses',
+                        data: monthlyData.expenses,
+                        backgroundColor: 'rgba(239, 68, 68, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update charts
+        function updateCharts() {
+            Object.values(charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            initializeCharts();
+        }
+
+        // Update category selects
+        function updateCategorySelects() {
+            const selects = ['transactionCategorySelect', 'ruleCategorySelect'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">Select Category</option>' +
+                    categories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('');
+            });
+        }
+
+        // Helper functions
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-NZ', {
+                style: 'currency',
+                currency: 'NZD'
+            }).format(amount);
+        }
+
+        function getTransactionIcon(category) {
+            const icons = {
+                'Groceries': 'fa-shopping-cart',
+                'Petrol': 'fa-gas-pump',
+                'Utilities': 'fa-bolt',
+                'Rent': 'fa-home',
+                'Other Income': 'fa-money-bill-wave',
+                'Transfers': 'fa-exchange-alt'
+            };
+            return icons[category] || 'fa-credit-card';
+        }
+
+        function getTransactionCountForCategory(categoryName) {
+            return transactions.filter(t => t.category === categoryName).length;
+        }
+
+        function getCategoryColor(colorClass) {
+            const colors = {
+                'bg-blue-500': '#3b82f6',
+                'bg-green-500': '#10b981',
+                'bg-red-500': '#ef4444',
+                'bg-yellow-500': '#f59e0b',
+                'bg-purple-500': '#8b5cf6',
+                'bg-pink-500': '#ec4899'
+            };
+            return colors[colorClass] || '#6b7280';
+        }
+
+        // Modal functions
+        function openAddTransactionModal() {
+            document.getElementById('addTransactionModal').classList.add('active');
+        }
+
+        function openAddCategoryModal() {
+            document.getElementById('addCategoryModal').classList.add('active');
+        }
+
+        function openAddRuleModal() {
+            document.getElementById('addRuleModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Form handlers
+        async function handleAddTransaction(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const { error } = await supabase.from('transactions').insert({
+                    description: formData.get('description'),
+                    amount_cents: Math.round(parseFloat(formData.get('amount')) * 100),
+                    category: formData.get('category'),
+                    posted_at: new Date().toISOString(),
+                    needs_review: false
+                });
+                
+                if (error) throw error;
+                
+                closeModal('addTransactionModal');
+                e.target.reset();
+                await loadTransactions();
+                updateDashboard();
+                showNotification('Transaction added successfully', 'success');
+            } catch (error) {
+                console.error('Error adding transaction:', error);
+                showNotification('Error adding transaction', 'error');
+            }
+        }
+
+        async function handleAddCategory(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            if (!currentUser) {
+                showNotification('Please sign in first', 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase.from('categories').insert({
+                    name: formData.get('name'),
+                    color: formData.get('color'),
+                    user_id: currentUser.id
+                });
+                
+                if (error) throw error;
+                
+                closeModal('addCategoryModal');
+                e.target.reset();
+                await loadCategories();
+                updateDashboard();
+                showNotification('Category added successfully', 'success');
+            } catch (error) {
+                console.error('Error adding category:', error);
+                showNotification('Error adding category', 'error');
+            }
+        }
+
+        async function handleAddRule(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            if (!currentUser) {
+                showNotification('Please sign in first', 'error');
+                return;
+            }
+            
+            try {
+                const { error } = await supabase.from('rules').insert({
+                    matcher: formData.get('matcher'),
+                    category: formData.get('category'),
+                    confidence: parseInt(formData.get('confidence')),
+                    user_id: currentUser.id
+                });
+                
+                if (error) throw error;
+                
+                closeModal('addRuleModal');
+                e.target.reset();
+                await loadRules();
+                updateDashboard();
+                showNotification('Rule added successfully', 'success');
+            } catch (error) {
+                console.error('Error adding rule:', error);
+                showNotification('Error adding rule', 'error');
+            }
+        }
+
+        // Other functions
+        function filterTransactions() {
+            const query = document.getElementById('searchTransactions').value.toLowerCase();
+            const filteredTransactions = transactions.filter(t => 
+                t.description.toLowerCase().includes(query) ||
+                (t.category && t.category.toLowerCase().includes(query))
+            );
+            
+            // Update the display with filtered transactions
+            const container = document.getElementById('transactionsList');
+            container.innerHTML = filteredTransactions.map(transaction => `
+                <div class="transaction-item">
+                    <div class="transaction-icon">
+                        <i class="fas ${getTransactionIcon(transaction.category)}"></i>
+                    </div>
+                    <div class="transaction-details">
+                        <div class="transaction-description">${transaction.description}</div>
+                        <div class="transaction-category">
+                            ${transaction.category || 'Uncategorized'}
+                            ${transaction.needs_review ? '<span class="category-badge" style="background: var(--warning-color); color: white;">Needs Review</span>' : ''}
+                        </div>
+                        <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                            ${new Date(transaction.posted_at).toLocaleDateString()}
+                        </div>
+                    </div>
+                    <div class="transaction-amount ${transaction.amount_cents > 0 ? 'amount-positive' : 'amount-negative'}">
+                        ${formatCurrency(transaction.amount_cents / 100)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function applyCategorization() {
+            try {
+                const { data, error } = await supabase.rpc('apply_categorization_rules');
+                if (error) throw error;
+                
+                await loadTransactions();
+                updateDashboard();
+                showNotification('Categorization rules applied successfully', 'success');
+            } catch (error) {
+                console.error('Error applying categorization:', error);
+                showNotification('Error applying categorization rules', 'error');
+            }
+        }
+
+        async function deleteRule(ruleId) {
+            if (!confirm('Are you sure you want to delete this rule?')) return;
+            
+            try {
+                const { error } = await supabase.from('rules').delete().eq('id', ruleId);
+                if (error) throw error;
+                
+                await loadRules();
+                updateDashboard();
+                showNotification('Rule deleted successfully', 'success');
+            } catch (error) {
+                console.error('Error deleting rule:', error);
+                showNotification('Error deleting rule', 'error');
+            }
+        }
+
+        async function refreshData() {
+            await loadData();
+            showNotification('Data refreshed successfully', 'success');
+        }
+
+        function exportTransactions() {
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Date,Description,Category,Amount\n"
+                + transactions.map(t => 
+                    `${t.posted_at},${t.description},${t.category || 'Uncategorized'},${t.amount_cents / 100}`
+                ).join("\n");
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "transactions.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showNotification(message, type = 'info') {
+            // Simple notification system
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 0.5rem;
+                color: white;
+                font-weight: 500;
+                z-index: 9999;
+                animation: slideIn 0.3s ease;
+                background: ${type === 'success' ? 'var(--accent-color)' : type === 'error' ? 'var(--danger-color)' : 'var(--primary-color)'};
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
