@@ -1,10 +1,4 @@
 {
-  "functions": {
-    "*.html": {
-      "memory": 1024,
-      "maxDuration": 10
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
