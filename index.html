@@ -1283,6 +1283,11 @@
             const chartElement = document.getElementById('spendingChart');
             if (!chartElement) return;
             
+            // Destroy existing chart if it exists
+            if (charts.spending) {
+                charts.spending.destroy();
+            }
+            
             const ctx = chartElement.getContext('2d');
             
             // Get last 30 days of data
@@ -1340,6 +1345,11 @@
             const chartElement = document.getElementById('categoryChart');
             if (!chartElement) return;
             
+            // Destroy existing chart if it exists
+            if (charts.category) {
+                charts.category.destroy();
+            }
+            
             const ctx = chartElement.getContext('2d');
             
             const categorySpending = {};
@@ -1379,6 +1389,11 @@
         function initTrendsChart() {
             const chartElement = document.getElementById('trendsChart');
             if (!chartElement) return;
+            
+            // Destroy existing chart if it exists
+            if (charts.trends) {
+                charts.trends.destroy();
+            }
             
             const ctx = chartElement.getContext('2d');
             
@@ -1433,9 +1448,7 @@
 
         // Update charts
         function updateCharts() {
-            Object.values(charts).forEach(chart => {
-                if (chart) chart.destroy();
-            });
+            // Charts will be destroyed individually in their init functions
             initializeCharts();
         }
 
