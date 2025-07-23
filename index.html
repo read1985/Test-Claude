@@ -795,24 +795,22 @@
 
     <script>
         // Initialize Supabase client with environment variables
-        const SUPABASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-            ? 'https://zwmcuanpkeugmobxjero.supabase.co'
-            : (process?.env?.VITE_SUPABASE_URL || 'https://zwmcuanpkeugmobxjero.supabase.co');
-        const SUPABASE_ANON_KEY = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3bWN1YW5wa2V1Z21vYnhqZXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxMzE4NzgsImV4cCI6MjA2NzcwNzg3OH0.UfyLKz0ITRMG9IpzllwNRhaIDKg-zI93EAYsF7HIy2s'
-            : (process?.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3bWN1YW5wa2V1Z21vYnhqZXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxMzE4NzgsImV4cCI6MjA2NzcwNzg3OH0.UfyLKz0ITRMG9IpzllwNRhaIDKg-zI93EAYsF7HIy2s');
+        const SUPABASE_URL = 'https://zwmcuanpkeugmobxjero.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp3bWN1YW5wa2V1Z21vYnhqZXJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxMzE4NzgsImV4cCI6MjA2NzcwNzg3OH0.UfyLKz0ITRMG9IpzllwNRhaIDKg-zI93EAYsF7HIy2s';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         // Global state
         let currentUser = null;
         let transactions = [];
         let categories = [];
         let rules = [];
         let charts = {};
+        let supabase = null;
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize Supabase client
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
             await checkAuthState();
             setupEventListeners();
             
